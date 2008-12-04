@@ -1,0 +1,97 @@
+<?php
+
+// $Id$
+
+/**
+ *
+ *
+ */
+function jserrorlog_menu( $may_cache ) {
+//    drupal_set_message( drupal_get_path('module', 'jserrorlog') . '/jserrorlog.js' ) ;
+  if ( $may_cache ) {
+    $items[] = array(
+      'path' => 'jserrorlog',
+      'description' => t('Adjust settings for the dropdown Administration Menu.'),
+      'callback' => 'jserrorlog_log_error',
+      'access' => true,
+      'type' => MENU_CALLBACK,
+    );
+    $items[] = array( 
+      'path' => 'admin/settings/jserrorlog',
+      'title' => t('JS Error Logging'),
+      'description' => t('Record clientside JS errors on your site'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array( 'jserrorlog_admin_settings' ),
+      'access' => user_access( 'administer site configuration' ),
+    ) ;
+    return $items ;
+  } else {
+    drupal_add_js( drupal_get_path('module', 'jserrorlog') . '/jserrorlog.js' );  
+  }
+}
+
+/**
+ *
+ *
+ */
+function jserrorlog_log_error() {
+  $methods = variable_get( 'jserrorlog_methods', array() ) ;
+  if ( $methods == array() ) {
+    die( "['error logging disabled']" ) ;
+  }
+  global $user ;
+  // if we get here, then we will compose a suitable message
+  $error_details = array( 
+    'info' => array(
+      'Page' => $_SERVER['HTTP_REFERER'],
+      'File' => $_POST['file'],
+      'Line' => $_POST['line'],
+      'Msg ' => $_POST['message'],
+    ),
+    'user' => array( 
+      'name' => $user->name,
+      'mail' => $user->mail,
+      'session' => $user->session
+    ),
+    'post' => $_POST, 
+    'request' => $_REQUEST, 
+    'server' => $_SERVER 
+  ) ;
+  $error_body  = print_r( $error_details, 1 ) ;
+  $html_msg    = "JavaScript error recorded:<pre>" . $error_body . "</pre>" ;
+  if ( in_array( 'email', $methods ) ) {
+    $txt_msg     = "Javascript error recorded. Debug data follows:\n\n" . $error_body ;
+    $recipient   = variable_get( 'jserrorlog_mail_address', variable_get( 'site_mail', '' ) ) ;
+    $subject     = variable_get( 'site_name', '' ) . ' JS error report' ;
+    drupal_mail( 'jserrorlog', $recipient, $subject, $txt_msg ) ;
+  }
+  if ( in_array( 'watchdog', $methods ) ) {
+    watchdog( 'js error', $message ) ;
+  }
+  die("['thanks']");
+}
+
+/**
+ *
+ *
+ */
+function jserrorlog_admin_settings() {
+  $log_methods = array( 
+    'watchdog' => 'Use site logs',
+    'email'    => 'Use email'
+  ) ;
+  $form['jserrorlog_methods'] = array( 
+    '#type' => 'checkboxes',
+    '#title' => t('Record JS errors via'),
+    '#default_value' => variable_get( 'jserrorlog_methods', array() ),
+    '#options' => $log_methods,
+    '#description' => t('Which methods you wish to use for recording JS errors'),
+  ) ;
+  $form['jserrorlog_mail_address'] = array( 
+    '#type' => 'textfield',
+    '#title' => t('Email to'),
+    '#default_value' => variable_get( 'jserrorlog_mail_address', variable_get( 'site_mail', '' ) ),
+    '#description' => t('Email address to send JS errors to (if enabled)'),
+  ) ;
+  return system_settings_form($form) ;
+}
