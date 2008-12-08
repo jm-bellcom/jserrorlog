@@ -3,11 +3,19 @@
 // $Id$
 
 /**
+ * Implement hook_menu()
  *
+ * We add two menu entries; one for system settings, and one for the
+ * form to post to.
+ *
+ * We also add the JS code file for this module.
+ *
+ * @todo The postback URI should not be a standard Drupal path; it
+ * should go to xmlrpc.php instead, in order to avoid conflicting with
+ * any other nodes which occupy the same space.
  *
  */
 function jserrorlog_menu( $may_cache ) {
-//    drupal_set_message( drupal_get_path('module', 'jserrorlog') . '/jserrorlog.js' ) ;
   if ( $may_cache ) {
     $items[] = array(
       'path' => 'jserrorlog',
@@ -31,8 +39,23 @@ function jserrorlog_menu( $may_cache ) {
 }
 
 /**
+ * Callback function which 
+ * 
+ * We return some plaintext (which happens to be JSON), perform any
+ * actions required by the logging settings, and then die().
  *
+ * @todo I'm sure there's a better way to exit Drupal than using
+ * die(). Probably moving this from a Drupal path to xmlrpc.php would
+ * resolve this issue - mostly I'm just avoiding handling back a
+ * themed page.
  *
+ * @todo investigate whether a crafted POST to the handler could be
+ * exploited in the email log method
+ *
+ * @todo better formatting for the outputs
+ *
+ * @todo don't send any message unless there's really been a submitted
+ * POST
  */
 function jserrorlog_log_error() {
   $methods = variable_get( 'jserrorlog_methods', array() ) ;
@@ -66,14 +89,17 @@ function jserrorlog_log_error() {
     drupal_mail( 'jserrorlog', $recipient, $subject, $txt_msg ) ;
   }
   if ( in_array( 'watchdog', $methods ) ) {
-    watchdog( 'js error', $message ) ;
+    watchdog( 'js error', $html_msg ) ;
   }
   die("['thanks']");
 }
 
 /**
+ * Callback function to generate the admin settings form.
  *
- *
+ * Provide facility to override the email address to send reports to
+ * (defaults to site address) and allow people to choose between
+ * watchdog and email logging methods.
  */
 function jserrorlog_admin_settings() {
   $log_methods = array( 
@@ -95,3 +121,6 @@ function jserrorlog_admin_settings() {
   ) ;
   return system_settings_form($form) ;
 }
+
+// O DRUPAL GODS, PLEASE ACCEPT MY CHECKIN AND UPDATE THE 5.x-dev
+// TARBALL, THANKYOU VERY MUCH, GOODNIGHT
