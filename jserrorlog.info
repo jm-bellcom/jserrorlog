@@ -1,3 +1,2 @@
-$Id$
 name = Javascript Error Logger
 description = Records JavaScript errors to the Drupal log.

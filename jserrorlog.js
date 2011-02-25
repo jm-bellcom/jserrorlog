@@ -1,4 +1,3 @@
-// $Id$ 
 
 /**
  * capture javascript errors, then post
