@@ -1,3 +1,4 @@
+Fork for updating to drupal 6 and 7. Refer to main fork for issues.
 
 Description
 -----------
